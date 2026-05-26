@@ -177,9 +177,6 @@ const LoginUI = {
             <button type="submit" class="login-btn" id="login-btn">Iniciar sesión</button>
             <div class="login-error" id="login-error"></div>
           </form>
-          <div class="login-hint">
-            💡 <b>Primer ingreso:</b> usá <code>admin</code> / <code>admin</code>. Se te pedirá cambiar la contraseña.
-          </div>
           <div class="login-foot">v1.0 · uso interno LOG Consultoría</div>
         </div>
       </div>
