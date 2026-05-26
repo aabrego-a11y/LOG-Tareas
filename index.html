@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LOG Consultoría — Plan de Acción</title>
+
+<!-- jsPDF para generar PDFs en el navegador (equivalente a FPDF en Python) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+  /* ─── Paleta LOG Consultoría (igual al desktop) ───────────────── */
+  :root {
+    --bg:        #F0F4FA;
+    --hdr-bg:    #1F3864;
+    --sec-bg:    #1F497D;
+    --tbl-hdr:   #1F497D;
+    --row-alt:   #BDD7EE;
+    --nav-bg:    #162F52;
+    --nav-sel:   #2E75B6;
+    --azul-med:  #2E86C1;
+    --azul-claro:#5DADE2;
+    --borde:     #B4CDE6;
+    --gris:      #595959;
+    --verde:     #2E8B57;
+    --rojo:      #C0392B;
+    --gris-btn:  #888888;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: #222;
+    font-size: 14px;
+    overflow: hidden;
+  }
+
+  /* ─── Barra superior ─────────────────────────────────────────── */
+  #topbar {
+    background: var(--hdr-bg);
+    color: white;
+    padding: 14px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #topbar .right { font-size: 12px; opacity: .85; font-weight: normal; }
+
+  /* ─── Layout principal ───────────────────────────────────────── */
+  #app {
+    display: flex;
+    height: calc(100vh - 50px);
+  }
+
+  /* ─── Menú lateral ───────────────────────────────────────────── */
+  #nav {
+    background: var(--nav-bg);
+    width: 180px;
+    flex-shrink: 0;
+    color: white;
+    display: flex;
+    flex-direction: column;
+  }
+  #nav .nav-title {
+    color: #8BAFD4;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 16px 14px 8px;
+    letter-spacing: .5px;
+  }
+  #nav .nav-btn {
+    padding: 12px 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background .15s;
+    user-select: none;
+  }
+  #nav .nav-btn:hover { background: #1A3A5C; }
+  #nav .nav-btn.active { background: var(--nav-sel); }
+  #nav .nav-btn .icon { font-size: 14px; width: 20px; text-align: center; }
+  #nav .nav-footer {
+    margin-top: auto;
+    padding: 12px 14px;
+    color: #5A7A9A;
+    font-size: 11px;
+    border-top: 1px solid #1A3A5C;
+  }
+
+  /* ─── Área de contenido ──────────────────────────────────────── */
+  #content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .modulo { display: none; padding: 14px; }
+  .modulo.active { display: block; }
+
+  /* ─── Selector de proyecto/profesional ───────────────────────── */
+  .selector {
+    background: #E8EDF5;
+    border: 1px solid var(--borde);
+    padding: 8px;
+    margin-bottom: 10px;
+    border-radius: 2px;
+  }
+  .selector-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .selector-title {
+    color: var(--hdr-bg);
+    font-weight: bold;
+    padding: 4px 0;
+  }
+  .selector-actions { display: flex; gap: 6px; }
+  .radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 4px;
+    max-height: 80px;
+    overflow-y: auto;
+  }
+  .radio-group label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 2px;
+  }
+  .radio-group label:hover { background: #D0DCF0; }
+  .radio-group .empty {
+    color: var(--gris);
+    font-style: italic;
+    padding: 8px;
+  }
+
+  /* ─── Barra de sección ───────────────────────────────────────── */
+  .sec-bar {
+    background: var(--sec-bg);
+    color: white;
+    font-weight: bold;
+    padding: 7px 12px;
+    margin: 16px 0 6px;
+    font-size: 13px;
+  }
+
+  /* ─── Formularios ────────────────────────────────────────────── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 8px 12px;
+    padding: 4px 0 10px;
+  }
+  .form-grid label {
+    align-self: center;
+    font-size: 14px;
+  }
+  .form-grid input[type="text"],
+  .form-grid input[type="date"] {
+    padding: 6px 8px;
+    border: 1px solid #CCC;
+    border-radius: 2px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    width: 100%;
+  }
+  .date-cell { display: flex; gap: 4px; }
+  .date-cell input { flex: 1; }
+  .date-cell button {
+    padding: 0 10px;
+    background: #E8F0FA;
+    color: var(--nav-sel);
+    border: 1px solid var(--borde);
+    cursor: pointer;
+    border-radius: 2px;
+  }
+
+  /* ─── Botones genéricos ──────────────────────────────────────── */
+  button {
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: filter .12s;
+  }
+  button:hover { filter: brightness(.92); }
+  button:active { filter: brightness(.82); }
+
+  .btn-primary {
+    background: var(--nav-sel);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    font-weight: bold;
+    font-size: 12px;
+  }
+  .btn-danger {
+    background: var(--rojo);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    font-weight: bold;
+    font-size: 12px;
+  }
+  .btn-secondary {
+    background: var(--gris-btn);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    font-weight: bold;
+    font-size: 12px;
+  }
+  .btn-success {
+    background: var(--verde);
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  .btn-generate {
+    background: var(--hdr-bg);
+    color: white;
+    border: 2px solid #142A4A;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: bold;
+  }
+  .btn-mini {
+    background: var(--nav-sel);
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .btn-mini.gray { background: #666; }
+  .btn-mini.slate { background: #5A7A9A; }
+
+  /* ─── Tablas dinámicas ───────────────────────────────────────── */
+  .data-table {
+    border: 1px solid #D0DFF0;
+    margin-bottom: 4px;
+  }
+  .table-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+  }
+  .table-bar .hint {
+    color: #5A7A9A;
+    font-size: 11px;
+    font-style: italic;
+    margin-left: 8px;
+  }
+  .data-table .header-row,
+  .data-table .data-row {
+    display: grid;
+    align-items: stretch;
+  }
+  .data-table .header-row {
+    background: var(--tbl-hdr);
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+  }
+  .data-table .header-row > div,
+  .data-table .data-row > div {
+    padding: 6px 8px;
+    border-right: 1px solid #D0DFF0;
+    min-height: 28px;
+  }
+  .data-table .header-row > div:last-child,
+  .data-table .data-row > div:last-child { border-right: none; }
+
+  .data-table .data-row { border-top: 1px solid #D0DFF0; background: white; }
+  .data-table .data-row.alt { background: var(--row-alt); }
+
+  .data-row .num-cell {
+    color: var(--hdr-bg);
+    font-weight: bold;
+    text-align: center;
+    background: inherit;
+    align-self: center;
+    padding: 0 4px;
+  }
+
+  /* Inputs y textareas dentro de tablas */
+  .data-row input[type="text"],
+  .data-row textarea {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    padding: 4px 2px;
+    resize: vertical;
+    min-height: 22px;
+    outline: none;
+  }
+  .data-row textarea {
+    min-height: 44px;
+    font-family: Arial, sans-serif;
+  }
+  .data-row .cell-input {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 4px;
+  }
+  .data-row .cell-input input { flex: 1; }
+  .data-row .cell-input button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--nav-sel);
+    padding: 0 4px;
+  }
+
+  /* Layout específico de tabla "Objetivos" (Tareas): 50px | flexible */
+  .tabla-alcances .header-row,
+  .tabla-alcances .data-row {
+    grid-template-columns: 50px 1fr;
+  }
+  /* Layout de tabla "Prioridades": 50px | flex | 220px */
+  .tabla-prioridades .header-row,
+  .tabla-prioridades .data-row {
+    grid-template-columns: 50px 1fr 220px;
+  }
+  /* Layout Plan de Acción: 40px | 1fr | 1.3fr | 130px | 140px */
+  .tabla-plan .header-row,
+  .tabla-plan .data-row {
+    grid-template-columns: 40px 1.2fr 1.5fr 140px 150px;
+  }
+  /* Vault: # | fecha | módulo | referencia | archivo */
+  .tabla-vault .header-row,
+  .tabla-vault .data-row {
+    grid-template-columns: 50px 160px 140px 1fr 1.5fr;
+  }
+  .tabla-vault .data-row { cursor: pointer; }
+  .tabla-vault .data-row.selected { background: #BDD7EE !important; box-shadow: inset 0 0 0 2px var(--nav-sel); }
+  .tabla-vault .empty-msg {
+    padding: 14px;
+    color: var(--gris);
+    font-style: italic;
+    text-align: center;
+  }
+
+  /* ─── Pie con botones de acción ──────────────────────────────── */
+  .footer-actions {
+    display: flex;
+    justify-content: space-between;
+    padding: 18px 0;
+    margin-top: 10px;
+    gap: 8px;
+  }
+  .footer-actions .left-group { display: flex; gap: 8px; }
+
+  /* ─── Modal calendario ───────────────────────────────────────── */
+  .cal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.25);
+    display: none;
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .cal-overlay.active { display: flex; }
+  .cal-popup {
+    background: white;
+    padding: 14px;
+    border-radius: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    width: 280px;
+  }
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .cal-nav button {
+    background: white;
+    color: var(--nav-sel);
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 4px 10px;
+  }
+  .cal-title { color: var(--hdr-bg); font-weight: bold; font-size: 14px; }
+  .cal-weekdays, .cal-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+  }
+  .cal-weekdays div {
+    text-align: center;
+    color: #7A8A9A;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 0;
+  }
+  .cal-week div {
+    text-align: center;
+    padding: 6px 0;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    color: var(--hdr-bg);
+  }
+  .cal-week div:hover { background: #F0F4FA; }
+  .cal-week div.other-month { color: #C8D2DE; cursor: default; }
+  .cal-week div.other-month:hover { background: transparent; }
+  .cal-week div.today { background: #E8F0FA; color: var(--nav-sel); font-weight: bold; }
+  .cal-week div.selected { background: var(--nav-sel); color: white; font-weight: bold; }
+  .cal-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  .cal-footer button {
+    padding: 5px 12px;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .cal-footer .today-btn { background: #E8F0FA; color: var(--nav-sel); font-weight: bold; }
+  .cal-footer .cancel-btn { background: white; color: #7A8A9A; }
+
+  /* ─── Modal genérico (prompts, confirms) ─────────────────────── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.25);
+    display: none;
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: white;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    min-width: 400px;
+    max-width: 90%;
+  }
+  .modal h3 {
+    color: var(--hdr-bg);
+    margin-bottom: 12px;
+    font-size: 16px;
+  }
+  .modal p { margin-bottom: 14px; line-height: 1.5; }
+  .modal input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #CCC;
+    border-radius: 2px;
+    font-size: 14px;
+    margin-bottom: 14px;
+    font-family: Arial, sans-serif;
+  }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* ─── Toasts ─────────────────────────────────────────────────── */
+  #toast-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .toast {
+    background: white;
+    border-left: 4px solid var(--verde);
+    padding: 10px 14px;
+    border-radius: 2px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    max-width: 360px;
+    font-size: 13px;
+    animation: slideIn .25s ease-out;
+  }
+  .toast.error { border-left-color: var(--rojo); }
+  .toast.warn { border-left-color: #E6A700; }
+  @keyframes slideIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* ─── Misc ───────────────────────────────────────────────────── */
+  .vault-bar {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 4px 0;
+  }
+  .vault-bar .hint {
+    color: #5A7A9A;
+    font-size: 11px;
+    font-style: italic;
+    margin-left: 8px;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #C8D2DE; border-radius: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* ═══════════ AUTENTICACIÓN ════════════════════════════════════ */
+
+  /* ─── Pantalla de login ────────────────────────────────────── */
+  .login-bg {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #1F3864 0%, #2E75B6 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .login-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.3);
+    padding: 36px 32px;
+    width: 100%;
+    max-width: 380px;
+  }
+  .login-logo {
+    text-align: center;
+    font-size: 48px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .login-card h1 {
+    text-align: center;
+    color: var(--hdr-bg);
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+  .login-sub {
+    text-align: center;
+    color: var(--gris);
+    font-size: 13px;
+    margin-bottom: 22px;
+  }
+  .login-card label {
+    display: block;
+    color: var(--hdr-bg);
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    margin-top: 12px;
+  }
+  .login-card input[type="text"],
+  .login-card input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #CCC;
+    border-radius: 4px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .login-card input:focus {
+    outline: none;
+    border-color: var(--nav-sel);
+    box-shadow: 0 0 0 3px rgba(46, 117, 182, 0.15);
+  }
+
+  /* ─── Wrap del input password con ojito ─────────────────── */
+  .pwd-wrap {
+    position: relative;
+  }
+  .pwd-wrap input {
+    padding-right: 40px !important;
+  }
+  .pwd-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    line-height: 1;
+    opacity: .6;
+    transition: opacity .15s;
+  }
+  .pwd-toggle:hover { opacity: 1; }
+  .login-row {
+    display: flex;
+    align-items: center;
+    margin: 12px 0 6px;
+  }
+  .login-remember {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    font-weight: normal !important;
+    color: var(--gris) !important;
+    cursor: pointer;
+    margin: 0 !important;
+  }
+  .login-remember input { width: auto !important; }
+  .login-btn {
+    width: 100%;
+    background: var(--hdr-bg);
+    color: white;
+    border: none;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 18px;
+    letter-spacing: .3px;
+  }
+  .login-btn:hover { background: #18305A; }
+  .login-error {
+    color: var(--rojo);
+    font-size: 13px;
+    text-align: center;
+    margin-top: 12px;
+    min-height: 18px;
+  }
+  .login-hint {
+    margin-top: 16px;
+    padding: 10px 12px;
+    background: #FFF8E6;
+    border: 1px solid #F0D687;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #735000;
+    line-height: 1.5;
+  }
+  .login-hint code {
+    background: rgba(0,0,0,.06);
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-family: monospace;
+  }
+  .login-foot {
+    text-align: center;
+    color: #B0B8C5;
+    font-size: 11px;
+    margin-top: 22px;
+    padding-top: 14px;
+    border-top: 1px solid #EEE;
+  }
+
+  /* ─── Info de sesión en el topbar ──────────────────────────── */
+  #topbar .session-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    font-weight: normal;
+  }
+  #topbar .session-info .role-badge {
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    background: rgba(255,255,255,.15);
+  }
+  #topbar .session-info button {
+    background: rgba(255,255,255,.15);
+    color: white;
+    border: 1px solid rgba(255,255,255,.25);
+    padding: 4px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  #topbar .session-info button:hover { background: rgba(255,255,255,.25); }
+
+  /* ─── Modal de Gestión de Usuarios ─────────────────────────── */
+  .users-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 1500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .users-modal {
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 16px 48px rgba(0,0,0,.3);
+    width: 100%;
+    max-width: 900px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .users-head {
+    background: var(--hdr-bg);
+    color: white;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .users-head h2 { font-size: 17px; }
+  .users-close {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255,255,255,.4);
+    padding: 4px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .users-close:hover { background: rgba(255,255,255,.15); }
+  .users-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 22px;
+  }
+  .users-create {
+    background: #F0F4FA;
+    border: 1px solid var(--borde);
+    border-radius: 4px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+  }
+  .users-create h3 {
+    color: var(--hdr-bg);
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  .users-form {
+    display: grid;
+    grid-template-columns: 1.1fr 1.5fr 1.2fr 0.8fr auto;
+    gap: 8px;
+  }
+  .users-form input,
+  .users-form select {
+    padding: 7px 10px;
+    border: 1px solid #CCC;
+    border-radius: 3px;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+  }
+  .btn-primary-auth {
+    background: var(--nav-sel);
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .users-create-err {
+    color: var(--rojo);
+    font-size: 12px;
+    margin-top: 8px;
+    min-height: 16px;
+  }
+  .users-note {
+    color: var(--gris);
+    font-size: 12px;
+    font-style: italic;
+    margin-top: 6px;
+  }
+  .users-list h3 {
+    color: var(--hdr-bg);
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .user-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 1.5fr 100px 130px;
+    gap: 0;
+    border-bottom: 1px solid #E8EDF5;
+  }
+  .user-row.user-head {
+    background: var(--sec-bg);
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+  }
+  .user-cell {
+    padding: 8px 10px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+  }
+  .user-role { font-weight: bold; }
+  .user-date { color: var(--gris); font-size: 12px; }
+  .user-actions { gap: 4px; }
+  .user-btn {
+    background: #E8EDF5;
+    color: var(--hdr-bg);
+    border: 1px solid var(--borde);
+    padding: 3px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  .user-btn:hover { background: #D0DCF0; }
+  .user-btn.danger {
+    background: white;
+    color: var(--rojo);
+    border-color: #E8B5AD;
+  }
+  .user-btn.danger:hover { background: #FBE9E5; }
+  .me-tag {
+    font-size: 10px;
+    color: var(--gris);
+    font-style: italic;
+    margin-left: 4px;
+  }
+
+  /* ─── Modal de prompt/confirm en auth ──────────────────────── */
+  .auth-modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 1600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .auth-modal {
+    background: white;
+    border-radius: 6px;
+    padding: 22px 24px;
+    min-width: 380px;
+    max-width: 90%;
+    box-shadow: 0 12px 36px rgba(0,0,0,.25);
+  }
+  .auth-modal h3 {
+    color: var(--hdr-bg);
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  .auth-modal p {
+    color: var(--gris);
+    font-size: 13px;
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .auth-modal-input {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid #CCC;
+    border-radius: 3px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .auth-modal-acts {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .btn-cancel-auth {
+    background: var(--gris-btn);
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .btn-ok-auth {
+    background: var(--nav-sel);
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .btn-danger-auth {
+    background: var(--rojo);
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span>📋 LOG Consultoría — Plan de Acción</span>
+  <div class="session-info" id="session-info">
+    <!-- Se llena dinámicamente con la sesión activa -->
+  </div>
+</div>
+
+<div id="app">
+  <!-- ─── Menú lateral ───────────────────────────────────────── -->
+  <nav id="nav">
+    <div class="nav-title">MÓDULOS</div>
+    <div class="nav-btn active" data-module="tareas">
+      <span class="icon">📋</span><span>Tareas</span>
+    </div>
+    <div class="nav-btn" data-module="plan">
+      <span class="icon">🗂</span><span>Plan Acción</span>
+    </div>
+    <div class="nav-btn" data-module="vault">
+      <span class="icon">🗄</span><span>Vault</span>
+    </div>
+    <div class="nav-footer">
+      v1.0 web · Tareas · Plan · Vault
+    </div>
+  </nav>
+
+  <!-- ─── Contenido ──────────────────────────────────────────── -->
+  <main id="content">
+
+    <!-- ============ MÓDULO TAREAS ============ -->
+    <section class="modulo active" data-module="tareas">
+
+      <!-- Selector de Profesional -->
+      <div class="selector">
+        <div class="selector-top">
+          <div class="selector-title">🏗️ Seleccionar Profesional:</div>
+          <div class="selector-actions">
+            <button class="btn-primary" onclick="Tareas.nuevo()">＋ Nuevo profesional</button>
+            <button class="btn-danger" onclick="Tareas.eliminar()">🗑 Eliminar</button>
+          </div>
+        </div>
+        <div class="radio-group" id="tareas-radios">
+          <span class="empty">No hay profesionales. Hacé click en "＋ Nuevo profesional".</span>
+        </div>
+      </div>
+
+      <!-- Encabezado del Documento -->
+      <div class="sec-bar">Encabezado del Documento</div>
+      <div class="form-grid">
+        <label>Nombre del Profesional:</label>
+        <input type="text" id="tareas-nombre" />
+        <label>Semana:</label>
+        <input type="text" id="tareas-semana" />
+        <label>Última Actualización:</label>
+        <input type="text" id="tareas-actualizacion" />
+      </div>
+
+      <!-- Sección I: Objetivos -->
+      <div class="sec-bar">I. Objetivo Actual del Programa</div>
+      <div class="table-bar">
+        <button class="btn-mini" onclick="Tareas.addAlcance()">＋ Agregar fila</button>
+        <button class="btn-mini gray" onclick="Tareas.delAlcance()">－ Eliminar última</button>
+      </div>
+      <div class="data-table tabla-alcances">
+        <div class="header-row">
+          <div>#</div>
+          <div>Descripción del Objetivo</div>
+        </div>
+        <div id="tareas-alcances"></div>
+      </div>
+
+      <!-- Sección II: Prioridades -->
+      <div class="sec-bar">II. Tareas por Prioridades</div>
+      <div class="table-bar">
+        <button class="btn-mini" onclick="Tareas.addPrio()">＋ Agregar fila</button>
+        <button class="btn-mini gray" onclick="Tareas.delPrio()">－ Eliminar última</button>
+      </div>
+      <div class="data-table tabla-prioridades">
+        <div class="header-row">
+          <div>#</div>
+          <div>Tarea</div>
+          <div>Observaciones</div>
+        </div>
+        <div id="tareas-prioridades"></div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer-actions">
+        <div class="left-group">
+          <button class="btn-success" onclick="Tareas.guardarSinPDF()">💾 Guardar sin PDF</button>
+          <button class="btn-secondary" onclick="Tareas.limpiar()">🔄 Limpiar todo</button>
+        </div>
+        <button class="btn-generate" onclick="Tareas.generar()">📄 GENERAR PDF</button>
+      </div>
+    </section>
+
+    <!-- ============ MÓDULO PLAN DE ACCIÓN ============ -->
+    <section class="modulo" data-module="plan">
+
+      <!-- Selector de Proyecto -->
+      <div class="selector">
+        <div class="selector-top">
+          <div class="selector-title">🏗️ Seleccionar Proyecto:</div>
+          <div class="selector-actions">
+            <button class="btn-primary" onclick="Plan.nuevo()">＋ Nuevo proyecto</button>
+            <button class="btn-danger" onclick="Plan.eliminar()">🗑 Eliminar</button>
+          </div>
+        </div>
+        <div class="radio-group" id="plan-radios">
+          <span class="empty">No hay proyectos. Hacé click en "＋ Nuevo proyecto".</span>
+        </div>
+      </div>
+
+      <!-- Encabezado del Documento -->
+      <div class="sec-bar">Encabezado del Documento</div>
+      <div class="form-grid">
+        <label>Proyecto:</label>
+        <input type="text" id="plan-proyecto" />
+        <label>Objetivo:</label>
+        <input type="text" id="plan-proceso" />
+        <label>Fecha:</label>
+        <div class="date-cell">
+          <input type="text" id="plan-fecha" placeholder="YYYY-MM-DD" />
+          <button onclick="abrirCalendario('plan-fecha')">📅</button>
+        </div>
+      </div>
+
+      <!-- Pasos del Plan -->
+      <div class="sec-bar">Pasos del Plan de Acción</div>
+      <div class="table-bar">
+        <button class="btn-mini" onclick="Plan.addItem()">＋ Agregar paso</button>
+        <button class="btn-mini gray" onclick="Plan.delItem()">－ Eliminar último</button>
+        <span class="hint">💡 Click en 📅 para abrir el calendario de fecha</span>
+      </div>
+      <div class="data-table tabla-plan">
+        <div class="header-row">
+          <div>N°</div>
+          <div>Tema</div>
+          <div>Acción</div>
+          <div>Fecha</div>
+          <div>Responsable</div>
+        </div>
+        <div id="plan-items"></div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer-actions">
+        <div class="left-group">
+          <button class="btn-success" onclick="Plan.guardarSinPDF()">💾 Guardar sin PDF</button>
+          <button class="btn-secondary" onclick="Plan.limpiar()">🔄 Limpiar todo</button>
+        </div>
+        <button class="btn-generate" onclick="Plan.generar()">📄 GENERAR PDF</button>
+      </div>
+    </section>
+
+    <!-- ============ MÓDULO VAULT ============ -->
+    <section class="modulo" data-module="vault">
+
+      <div class="sec-bar">🗄 Vault — Últimos informes emitidos</div>
+
+      <div class="vault-bar">
+        <button class="btn-mini slate" onclick="Vault.refrescar()">🔄 Actualizar</button>
+        <button class="btn-mini" style="background: var(--rojo)" onclick="Vault.eliminarSel()">🗑 Eliminar registro</button>
+        <button class="btn-mini" onclick="Vault.descargarSel()">📄 Descargar PDF</button>
+        <button class="btn-mini slate" onclick="Vault.exportarTodo()">💾 Exportar todos los datos</button>
+        <button class="btn-mini slate" onclick="document.getElementById('import-file').click()">📥 Importar datos</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="Vault.importar(this)" />
+        <span class="hint">Máximo 100 registros. El PDF se vuelve a generar al descargar.</span>
+      </div>
+
+      <div class="data-table tabla-vault">
+        <div class="header-row">
+          <div>#</div>
+          <div>Fecha</div>
+          <div>Módulo</div>
+          <div>Referencia</div>
+          <div>Archivo PDF</div>
+        </div>
+        <div id="vault-rows"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ─── Modal calendario ─────────────────────────────────────── -->
+<div class="cal-overlay" id="cal-overlay" onclick="if(event.target===this) cerrarCalendario()">
+  <div class="cal-popup">
+    <div class="cal-nav">
+      <button onclick="Calendario.prevMonth()">‹</button>
+      <div class="cal-title" id="cal-title"></div>
+      <button onclick="Calendario.nextMonth()">›</button>
+    </div>
+    <div class="cal-weekdays">
+      <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div>
+      <div>Vie</div><div>Sáb</div><div>Dom</div>
+    </div>
+    <div id="cal-days"></div>
+    <div class="cal-footer">
+      <button class="today-btn" onclick="Calendario.hoy()">Hoy</button>
+      <button class="cancel-btn" onclick="cerrarCalendario()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal genérico (prompt/confirm) ──────────────────────── -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <p id="modal-body"></p>
+    <input type="text" id="modal-input" style="display:none" />
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<!-- ─── Container de toasts ──────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<script src="auth.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
